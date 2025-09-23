@@ -103,9 +103,9 @@ saida_sem_it = pd.read_sql(query_saida_sem_it, conn)
 
 # Overwrite the file entirely with the new sheet
 
-excel_path_backlog = 'C:/Users/pedro.paixao/Desktop/Pedro/Excel Macros/BacklogGATEAutoCompleto.xlsx'
-excel_path_prod = 'C:/Users/pedro.paixao/Desktop/Pedro/Excel Macros/ProdGATEAutoCompleto.xlsx'
-excel_path_saida_sem_it = 'C:/Users/pedro.paixao/Desktop/Pedro/Excel Macros/SaidaSemITGATEAutoCompleto.xlsx'
+excel_path_backlog = '~pentaho/python/backlog-GATE/BacklogGATEAutoCompleto.xlsx'
+excel_path_prod = '~pentaho/python/backlog-GATE/ProdGATEAutoCompleto.xlsx'
+excel_path_saida_sem_it = '~pentaho/python/backlog-GATE/SaidaSemITGATEAutoCompleto.xlsx'
 backlog.to_excel(excel_path_backlog, sheet_name='BacklogGATE', index=False, engine='xlsxwriter')
 prod.to_excel(excel_path_prod, sheet_name='ProdGATE', index=False, engine='xlsxwriter')
 saida_sem_it.to_excel(excel_path_saida_sem_it, sheet_name='SaidaSemITGATE', index=False, engine='xlsxwriter')
