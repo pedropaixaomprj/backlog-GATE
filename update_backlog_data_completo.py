@@ -1,14 +1,16 @@
 import xlsxwriter
 import psycopg2
 import pandas as pd
+import os
+from dotenv import load_dotenv
+load_dotenv()  # loads .env in development
 
 conn = psycopg2.connect(
-    host="h-pgsql01.pgj.rj.gov.br",
-    database="gate",
-    user="gate",
-    password="gatehom2020",
-    port="5432"
-)
+    host=os.environ.get("DB_HOST"),
+    database=os.environ.get("DB_NAME"),
+    user=os.environ.get("DB_USER"),
+    password=os.environ.get("DB_PASSWORD"),
+    port="5432")
 
 conn.autocommit = True
 
