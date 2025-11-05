@@ -59,7 +59,7 @@ WITH bl_atual AS (
     CASE WHEN "TEMAS" IS NOT NULL THEN "TEMAS" ELSE '### SEM TEMA ###' END
   from stage."MVW_SEI_SAT_GESTAO_ACERVO_DISTRIB"
 )
-select  --- aqui tive que acrescentar esse passo extra para dar merge no TP e núcleo nos casos que estava ao mesmo tempo em dois momentos do backlog (verificar o porquê)
+select
   string_agg(DISTINCT "NUCLEO", ', ') AS "NUCLEO",
   "PROCEDIMENTO_SEI",
   "SAT",
