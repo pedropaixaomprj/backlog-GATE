@@ -16,46 +16,70 @@ conn.autocommit = True
 
 cursor = conn.cursor()
 
-query_backlog = '''
-with pct as (
-	select t."ID_PROTOCOLO",
-	string_agg(distinct t."TEMA", ',') "TEMAS"
-	from stage."VW_SEI_SAT_PROC_TEMA" t
-	group by t."ID_PROTOCOLO"
-	),
-	csagr as (
-	select "ID_PROTOCOLO" ,
-	string_agg(distinct "ORGAO_DESTINO", ',') "NTs" ,
-	string_agg(distinct "USUARIO_ATRIBUIDO", ',') "TPs"
-	from stage."VW_SEI_Carga_SAT"
-	where "MOVIMENTO_LOCAL" = 'No GATE'
-	group by "ID_PROTOCOLO"
-	)
-	select distinct csagr."NTs" "NUCLEO" ,
-					"PROCEDIMENTO_SEI" ,
-					"ID_DOCUMENTO" "SAT",
-					TO_CHAR("DATA_ENVIO_GATE", 'DD/MM/YYYY') "DATA_ENVIO",
-					coalesce(date_part('day', NOW() - "DATA_ENVIO_GATE"),0) "DIAS_ENVIO",
-					-- "DIAS_ENVIO_GATE" "DIAS_ENVIO", não funciona, não está batendo com "DATA_ENVIO_GATE"
-					-- TO_CHAR("DATA_CRIACAO_SAT", 'DD/MM/YYYY') "DATA_CRIACAO_SAT",
-					-- coalesce(date_part('day', NOW() - "DATA_CRIACAO_SAT"),0) "DIAS_CRIACAO_SAT",
-					"MARCA_PRIOR_ATUAL" "PRIORIDADE", 
-					"TIPO_PRAZO" "TIPO PRAZO",
-					TO_CHAR("DATA_PRESCRICAO", 'DD/MM/YYYY') "DT PRAZO",
-					csagr."TPs" "TP",
-					"NUM_MPRJ" ,
-					"ORGAO_SOLICITANTE" ,
-						-- ,"DATA_MOVIMENTO" "DATA_ATRIBUICAO" ,
-					case
-						when pct."TEMAS" is not null then pct."TEMAS"
-						else '### SEM TEMA ###'
-					end "TEMAS"
-					from stage."VW_SEI_Carga_SAT" cs
-					left join csagr on csagr."ID_PROTOCOLO" = cs."ID_PROTOCOLO"
-					left join pct on pct."ID_PROTOCOLO" = cs."ID_PROTOCOLO"
-					where "MOVIMENTO_LOCAL" = 'No GATE'
-					order by "DIAS_ENVIO" desc, "PROCEDIMENTO_SEI"
+query_backlog = '''                                      
+WITH bl_atual AS (
+  select
+    "NT_EXTENSO" "NUCLEO",
+    "SEI"        "PROCEDIMENTO_SEI",
+    "SAT"        "SAT",
+    TO_CHAR("ENTRADA", 'DD/MM/YYYY') "DATA_ENVIO",
+    coalesce(date_part('day', NOW() - "ENTRADA"),0) "DIAS_ENVIO",
+    "PRIORIDADE",
+    "TIPO_PRAZO" "TIPO PRAZO",
+    TO_CHAR("PRAZO", 'DD/MM/YYYY') "DT PRAZO",
+    "TP_EXTENSO" "TP",
+    "NUM_MPRJ",
+    "ORGAO_SOLICITANTE_EXTENSO" "ORGAO_SOLICITANTE",
+    CASE WHEN "TEMAS" IS NOT NULL THEN "TEMAS" ELSE '### SEM TEMA ###' END "TEMAS"
+  from stage."MVW_SEI_SAT_GESTAO_ACERVO_ADMISS"
+  union all
+  select
+    "NT_EXTENSO", "SEI", "SAT",
+    TO_CHAR("ENTRADA", 'DD/MM/YYYY'),
+    coalesce(date_part('day', NOW() - "ENTRADA"),0),
+    "PRIORIDADE",
+    "TIPO_PRAZO",
+    TO_CHAR("PRAZO", 'DD/MM/YYYY'),
+    '_SEM USUARIO ATRIBUIDO',
+    "NUM_MPRJ",
+    "ORGAO_SOLICITANTE_EXTENSO",
+    CASE WHEN "TEMAS" IS NOT NULL THEN "TEMAS" ELSE '### SEM TEMA ###' END
+  from stage."MVW_SEI_SAT_GESTAO_ACERVO_ADMITIDO"
+  union all
+  select
+    "NT_EXTENSO", "SEI", "SAT",
+    TO_CHAR("ENTRADA", 'DD/MM/YYYY'),
+    coalesce(date_part('day', NOW() - "ENTRADA"),0),
+    "PRIORIDADE",
+    "TIPO_PRAZO",
+    TO_CHAR("PRAZO", 'DD/MM/YYYY'),
+    "TP_ATRIBUIDO_EXTENSO",
+    "NUM_MPRJ",
+    "ORGAO_SOLICITANTE_EXTENSO",
+    CASE WHEN "TEMAS" IS NOT NULL THEN "TEMAS" ELSE '### SEM TEMA ###' END
+  from stage."MVW_SEI_SAT_GESTAO_ACERVO_DISTRIB"
+)
+select  --- aqui tive que acrescentar esse passo extra para dar merge no TP e núcleo nos casos que estava ao mesmo tempo em dois momentos do backlog (verificar o porquê)
+  string_agg(DISTINCT "NUCLEO", ', ') AS "NUCLEO",
+  "PROCEDIMENTO_SEI",
+  "SAT",
+  "DATA_ENVIO",
+  "DIAS_ENVIO",
+  "PRIORIDADE",
+  "TIPO PRAZO",
+  "DT PRAZO",
+  string_agg(DISTINCT "TP", ', ') AS "TP",
+  "NUM_MPRJ",
+  "ORGAO_SOLICITANTE",
+  "TEMAS"
+FROM bl_atual
+GROUP BY
+  "PROCEDIMENTO_SEI","SAT","DATA_ENVIO","DIAS_ENVIO",
+  "PRIORIDADE","TIPO PRAZO","DT PRAZO",
+  "NUM_MPRJ","ORGAO_SOLICITANTE","TEMAS"
+ORDER BY "DIAS_ENVIO" DESC, "PROCEDIMENTO_SEI" DESC;
 '''
+
 
 query_prod = '''
 select "SEI" "PROCEDIMENTO_SEI",
