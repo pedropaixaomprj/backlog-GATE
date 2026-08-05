@@ -102,7 +102,7 @@ select "SEI" "PROCEDIMENTO_SEI",
 	   "DUVIDA",
 	   "LINK",
 	   "LINK_SAT",
-	   "LINK_IT"
+	 ''  "LINK_IT"
 from stage."MVW_SEI_SAT_GESTAO_ACERVO_PROD"
 '''
 
